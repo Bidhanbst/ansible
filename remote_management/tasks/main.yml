@@ -1,0 +1,47 @@
+- name: Download Kubernetes GPG key securely
+  ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+    state: present
+
+- name: Install kubectl
+  ansible.builtin.apt:
+     name: 
+      - kubectl
+     state: present
+     update_cache: yes
+
+- name: Hold kubectl package
+  ansible.builtin.command:
+     cmd: sudo apt-mark hold kubectl
+
+- name: Ensure .kube directory exists on Ansible server
+  file:
+    path: "{{ local_kubeconfig_path | dirname }}"
+    state: directory
+    mode: '0700'
+
+- name: Fetch kubeconfig from master node
+  command: >
+    ssh -o StrictHostKeyChecking=no {{ kube_master_user }}@{{ kube_master_ip }} "sudo cat {{ remote_kubeconfig_path }}"
+  register: kubeconfig_output
+  delegate_to: localhost
+  run_once: true
+
+- name: Save kubeconfig to local path
+  copy:
+    content: "{{ kubeconfig_output.stdout }}"
+    dest: "{{ local_kubeconfig_path }}"
+    mode: '0600'
+
+- name: Verify kubectl connectivity
+  command: kubectl get nodes
+  register: kube_test
+  failed_when: kube_test.rc != 0
+  changed_when: false
+
+- name: Show result
+  debug:
+    var: kube_test.stdout_lines

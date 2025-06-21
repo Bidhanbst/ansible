@@ -1,0 +1,44 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for application_deployment
+- name: Create a directory if it does not exist
+  ansible.builtin.file:
+    path: /app
+    state: directory
+    mode: '0777'
+
+- name: Install community.docker in ansible
+  ansible.builtin.command:
+    cmd: ansible-galaxy collection install community.docker
+
+- name: Clone Laravel app from GitHub
+  ansible.builtin.git:
+   repo: 'https://github.com/Bidhanbst/laravelapplication.git'
+   dest: /app
+
+- name: Enable multi-architecture docker build
+  ansible.builtin.command: 
+    cmd: docker buildx create --use && docker buildx inspect —bootstrap
+
+- name: Build a Docker image
+  ansible.builtin.command: 
+    cmd: docker buildx build --platform linux/amd64,linux/arm64 -t bidhanbst/myapplication:latest --push .
+
+- name: Build an image and push it to a Docker Hub
+  community.docker.docker_image:
+    build:
+      path: /app/laravelapplication
+    name: bidhanbst/myapplication:latest
+    tag: v1
+    push: true
+    source: build
+
+- name: Kubectl apply
+  ansible.builtin.command: kubectl apply -f k8s
+  args:
+    chdir: /app/laravelapplication
+
+
+
+
+

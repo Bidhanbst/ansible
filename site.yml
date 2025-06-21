@@ -1,0 +1,36 @@
+---
+- name: Configure Kubernetes Master
+  hosts: master_nodes
+  become: yes
+  roles:
+    - kubernetes_master
+
+- name: Configure Kubernetes Network
+  hosts: master_nodes
+  become: yes
+  roles:
+    - kubernetes_network
+
+- name: Configure Kubernetes Worker
+  hosts: worker_nodes
+  become: yes
+  roles:
+    - kubernetes_worker
+
+- name: Configure Ansible for Remote Kubernetes Management
+  hosts: localhost
+  become: yes
+  roles:
+    - remote_management
+
+- name: Install NFS server 
+  hosts: nfs_server
+  become: yes
+  roles:
+    - install_nfs
+
+- name: Deploy an application
+  hosts: localhost
+  become: yes
+  roles:
+    - application_deployment
