@@ -33,12 +33,204 @@
     push: true
     source: build
 
-- name: Kubectl apply
-  ansible.builtin.command: kubectl apply -f k8s
-  args:
-    chdir: /app/laravelapplication
+- name: Apply database statefulsets
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: postgres
+      spec:
+        selector:
+          matchLabels:
+            app: postgres
+        serviceName: postgres
+        template:
+          metadata:
+            labels:
+              app: postgres
+          spec:
+            containers:
+              - name: postgres
+                image: postgres:latest
+                env:
+                  - name: POSTGRES_USER
+                    value: postgres
+                  - name: POSTGRES_PASSWORD
+                    value: postgres
+                  - name: POD_IP
+                    valueFrom:
+                      fieldRef:
+                        apiVersion: v1
+                        fieldPath: status.podIP
+                ports:
+                - name: postgres
+                  containerPort: 5432
+                livenessProbe:
+                  exec:
+                    command:
+                      - "sh"
+                      - "-c"
+                      - "pg_isready --host $POD_IP"
+                  initialDelaySeconds: 30
+                  periodSeconds: 5
+                  timeoutSeconds: 5
+                readinessProbe:
+                  exec:
+                    command:
+                      - "sh"
+                      - "-c"
+                      - "pg_isready --host $POD_IP"
+                  initialDelaySeconds: 5
+                  periodSeconds: 5
+                  timeoutSeconds: 1
+                volumeMounts:
+                - name: data
+                  mountPath: /var/lib/postgresql/data
+            volumes:
+             - name: data
+               persistentVolumeClaim:
+                claimName: nfs-pvc
+
+- name: Apply database service
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: postgres
+        labels:
+          app: postgres
+      spec:
+        ports:
+          - name: postgres
+            port: 5432
+        clusterIP: None
+        selector:
+          app: postgres
+
+- name: Apply Persistent Volume
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: nfs-pv
+      spec:
+        storageClassName: manual
+        capacity:
+          storage: 10Gi
+        accessModes:
+          - ReadWriteMany
+        nfs:
+          path: /srv/nfs
+          server: 134.209.158.34
+
+- name: Apply Persistent Volume Claim
+  kubernetes.core.k8s:
+    definition:
+       apiVersion: v1
+       kind: PersistentVolumeClaim
+       metadata:
+         name: nfs-pvc
+       spec:
+         storageClassName: manual
+         accessModes:
+           - ReadWriteMany
+         resources:
+           requests:
+             storage: 10Gi
 
 
+- name: Apply Storage Class
+  kubernetes.core.k8s:
+    definition:   
+       kind: StorageClass
+       apiVersion: storage.k8s.io/v1
+       metadata:
+         name: manual
+       provisioner: kubernetes.io/no-provisioner
+       volumeBindingMode: Immediate 
 
+- name: Apply Application deployment
+  kubernetes.core.k8s:
+    definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: myapplication
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: myapplication
+          template:
+            metadata:
+              labels:
+                app: myapplication
+            spec:
+              containers:
+                - name: myapplication
+                  image: bidhanbst/myapplication:latest
+                  workingDir: /app
+                  ports:
+                    - containerPort: 8000
+                  env:
+                    - name: DB_HOST
+                      value: postgres.default.svc.cluster.local
+                    - name: DB_CONNECTION
+                      value: pgsql
+                    - name: DB_DATABASE
+                      value: test-db
+                    - name: DB_USERNAME
+                      value: postgres
+                    - name: DB_PASSWORD
+                      value: postgres
+                  command: ["/bin/sh", "-c"]
+                  args:
+                    - |
+                      composer install && \
+                      php artisan migrate --force && \
+                      php artisan serve --host=0.0.0.0 --port=8000
+                  resources:
+                    requests:
+                      cpu: 500m
+
+- name: Apply Application service
+  kubernetes.core.k8s:
+    definition:
+       apiVersion: v1
+       kind: Service
+       metadata:
+         name: myapplication
+       spec:
+         type: NodePort
+         selector:
+           app: myapplication
+         ports:
+           - port: 8000
+             nodePort: 32000
+
+- name: Apply Horizontal Pod Scaler
+  kubernetes.core.k8s:
+    definition:
+       apiVersion: autoscaling/v2
+       kind: HorizontalPodAutoscaler
+       metadata:
+         name: myapplication-autoscaler
+       spec:
+         scaleTargetRef:
+           apiVersion: apps/v1
+           kind: Deployment
+           name: myapplication
+         minReplicas: 3
+         maxReplicas: 9
+         metrics:
+           - type: Resource
+             resource:
+               name: cpu
+               target:
+                 type: Utilization
+                 averageUtilization: 50
 
 
