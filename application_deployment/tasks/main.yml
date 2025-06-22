@@ -20,6 +20,39 @@
   ansible.builtin.command: 
     cmd: docker buildx build --platform linux/amd64,linux/arm64 -t bidhanbst/myapplication:latest --push .
 
+- name: Deploy Kubernetes Dashboard
+  ansible.builtin.command: 
+    cmd: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+- name: Deploy Metrics Server 
+  ansible.builtin.command: 
+    cmd: kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+- name: Create service account for dashboard
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: dashboard-user
+        namespace: kubernetes-dashboard
+
+- name: Create Cluster Role binding for dashboard-user
+  kubernetes.core.k8s:
+    definition:
+       apiVersion: rbac.authorization.k8s.io/v1
+       kind: ClusterRoleBinding
+       metadata:
+         name: dashboard-user
+       roleRef:
+         apiGroup: rbac.authorization.k8s.io
+         kind: ClusterRole
+         name: cluster-admin
+       subjects:
+       - kind: ServiceAccount
+         name: dashboard-user
+         namespace: kubernetes-dashboard
+
 - name: Apply Persistent Volume
   kubernetes.core.k8s:
     definition:
@@ -219,5 +252,9 @@
                target:
                  type: Utilization
                  averageUtilization: 50
+
+
+
+
 
 

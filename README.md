@@ -118,14 +118,9 @@ In this section, we break down the tasks required for deploying application on K
 - Create Horizontal Pod Autoscaler for an application which triggers the high CPU usage and increase replicas on demand.
 
 
-After executing the playbook following changes will occur.
-- The playbook execution will create one master and one worker node.
-- The Kubernetes cluster will be ready to accept deployments.
-- Ansible server will be configured as Remote Kubernetes Management server.
-- NFS server will be installed on localhost.
-- NFS client will be installed on worker nodes.
-- Application will be deployed to the Kubernetes cluster.
+## How to access the Laravel application ?
 
+To access the laravel application visit http://192.168.130.177:32000
 
 
 
