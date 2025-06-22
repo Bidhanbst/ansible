@@ -24,15 +24,6 @@
   ansible.builtin.command: 
     cmd: docker buildx build --platform linux/amd64,linux/arm64 -t bidhanbst/myapplication:latest --push .
 
-- name: Build an image and push it to a Docker Hub
-  community.docker.docker_image:
-    build:
-      path: /app/laravelapplication
-    name: bidhanbst/myapplication:latest
-    tag: v1
-    push: true
-    source: build
-
 - name: Apply database statefulsets
   kubernetes.core.k8s:
     definition:
