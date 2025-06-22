@@ -95,9 +95,33 @@ Now we will proceed with executing the playbook using the following command.
 ansible-playbook -i hosts site.yml -K
 ```
 
+# Application Deployment
+
+The role has been created for deploying laravel application to Kubernetes Cluster.
+```
+ansible-galaxy init application_deployment
+```
+
+In this section, we break down the tasks required for deploying application on Kubernetes cluster. Please check task.yaml file on the role.
+
+- Create a directory for cloning repository of an application if it doesn't exists.
+- Clone a simple laravel application from the repository.
+- Enable multi architecture docker build to run docker image on different CPU architecture and operating systems.
+- Build the docker image and push it to the docker hub.
+- Create  Persistent Volume that utilizes the NFS server installed in ansible host to persist the volume of database pod.
+- Create Persistent Volume claim.
+- Create Storage Class.
+- Create Statefulset for database. We are using Statefulset for deploying postgres database. The environment variables are passed in the yaml file.
+- Create Service to expose database to ClusterIP.
+- Create deployment for an application. Make sure you are using the latest docker image from Docker Hub.
+- Create NodePort service to expose application on NodePort.
+- Create Horizontal Pod Autoscaler for an application which triggers the high CPU usage and increase replicas on demand.
+
+
 After executing the playbook following changes will occur.
 - The playbook execution will create one master and one worker node.
 - The Kubernetes cluster will be ready to accept deployments.
+- Ansible server will be configured as Remote Kubernetes Management server.
 - NFS server will be installed on localhost.
 - NFS client will be installed on worker nodes.
 - Application will be deployed to the Kubernetes cluster.

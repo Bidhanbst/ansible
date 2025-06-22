@@ -7,10 +7,6 @@
     state: directory
     mode: '0777'
 
-- name: Install community.docker in ansible
-  ansible.builtin.command:
-    cmd: ansible-galaxy collection install community.docker
-
 - name: Clone Laravel app from GitHub
   ansible.builtin.git:
    repo: 'https://github.com/Bidhanbst/laravelapplication.git'
@@ -23,6 +19,49 @@
 - name: Build a Docker image
   ansible.builtin.command: 
     cmd: docker buildx build --platform linux/amd64,linux/arm64 -t bidhanbst/myapplication:latest --push .
+
+- name: Apply Persistent Volume
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: nfs-pv
+      spec:
+        storageClassName: manual
+        capacity:
+          storage: 10Gi
+        accessModes:
+          - ReadWriteMany
+        nfs:
+          path: /srv/nfs
+          server: 134.209.158.34
+
+- name: Apply Persistent Volume Claim
+  kubernetes.core.k8s:
+    definition:
+       apiVersion: v1
+       kind: PersistentVolumeClaim
+       metadata:
+         name: nfs-pvc
+       spec:
+         storageClassName: manual
+         accessModes:
+           - ReadWriteMany
+         resources:
+           requests:
+             storage: 10Gi
+
+
+- name: Apply Storage Class
+  kubernetes.core.k8s:
+    definition:   
+       kind: StorageClass
+       apiVersion: storage.k8s.io/v1
+       metadata:
+         name: manual
+       provisioner: kubernetes.io/no-provisioner
+       volumeBindingMode: Immediate
 
 - name: Apply database statefulsets
   kubernetes.core.k8s:
@@ -98,50 +137,7 @@
             port: 5432
         clusterIP: None
         selector:
-          app: postgres
-
-- name: Apply Persistent Volume
-  kubernetes.core.k8s:
-    definition:
-      apiVersion: v1
-      kind: PersistentVolume
-      metadata:
-        name: nfs-pv
-      spec:
-        storageClassName: manual
-        capacity:
-          storage: 10Gi
-        accessModes:
-          - ReadWriteMany
-        nfs:
-          path: /srv/nfs
-          server: 134.209.158.34
-
-- name: Apply Persistent Volume Claim
-  kubernetes.core.k8s:
-    definition:
-       apiVersion: v1
-       kind: PersistentVolumeClaim
-       metadata:
-         name: nfs-pvc
-       spec:
-         storageClassName: manual
-         accessModes:
-           - ReadWriteMany
-         resources:
-           requests:
-             storage: 10Gi
-
-
-- name: Apply Storage Class
-  kubernetes.core.k8s:
-    definition:   
-       kind: StorageClass
-       apiVersion: storage.k8s.io/v1
-       metadata:
-         name: manual
-       provisioner: kubernetes.io/no-provisioner
-       volumeBindingMode: Immediate 
+          app: postgres 
 
 - name: Apply Application deployment
   kubernetes.core.k8s:
