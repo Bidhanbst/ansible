@@ -3,14 +3,14 @@
 # tasks file for application_deployment
 - name: Create a directory if it does not exist
   ansible.builtin.file:
-    path: /home/ansibleuser
+    path: /home/ansibleuser/app
     state: directory
     mode: '0777'
 
 - name: Clone Laravel app from GitHub
   ansible.builtin.git:
    repo: 'https://github.com/Bidhanbst/laravelapplication.git'
-   dest: /app
+   dest: /home/ansibleuser/app
 
 - name: Enable multi-architecture docker build
   ansible.builtin.command: 
