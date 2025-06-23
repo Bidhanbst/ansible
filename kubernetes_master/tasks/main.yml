@@ -165,7 +165,7 @@
     dest: /etc/profile.d/kubernetes.sh
     content: |
       export KUBECONFIG=/etc/kubernetes/admin.conf
-      export ANSIBLE_USER="sysadmin"
+      export ANSIBLE_USER="k8s-master"
 
 - name: Reboot the system
   ansible.builtin.reboot:

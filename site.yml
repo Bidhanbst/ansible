@@ -24,7 +24,7 @@
     - remote_management
 
 - name: Install NFS server 
-  hosts: nfs_server
+  hosts: localhost
   become: yes
   roles:
     - install_nfs

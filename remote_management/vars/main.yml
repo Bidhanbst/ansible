@@ -2,8 +2,8 @@
 ---
 # vars file for remote_management
 
-kube_master_ip: "64.227.141.153"
-kube_master_user: "root"
+kube_master_ip: "192.168.130.176"
+kube_master_user: "k8s-master"
 remote_kubeconfig_path: "/etc/kubernetes/admin.conf"
 local_kubeconfig_path: "{{ lookup('env','HOME') }}/.kube/config"
 

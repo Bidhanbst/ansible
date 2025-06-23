@@ -3,7 +3,7 @@
 # tasks file for application_deployment
 - name: Create a directory if it does not exist
   ansible.builtin.file:
-    path: /app
+    path: /home/ansibleuser
     state: directory
     mode: '0777'
 
@@ -67,8 +67,8 @@
         accessModes:
           - ReadWriteMany
         nfs:
-          path: /srv/nfs
-          server: 134.209.158.34
+          path: /home/ansibleuser/nfs
+          server: 192.168.130.175
 
 - name: Apply Persistent Volume Claim
   kubernetes.core.k8s:

@@ -18,18 +18,18 @@
 
 - name: Create a directory if it does not exist
   ansible.builtin.file:
-    path: /srv/nfs
+    path: /home/ansibleuser/nfs
     state: directory
     mode: '0777'
 
 - name: Change ownership
   ansible.builtin.command:
-    cmd: sudo chmod 777 /srv/nfs
+    cmd: sudo chmod 777 /home/ansibleuser/nfs
 
 - name: Ensure NFS export is defined in /etc/exports
   lineinfile:
     path: /etc/exports
-    line: "/srv/nfs    *(rw,sync,no_subtree_check,no_root_squash)"
+    line: "/home/ansibleuser/nfs    *(rw,sync,no_subtree_check,no_root_squash)"
     state: present
 
 - name: Export the NFS shares
